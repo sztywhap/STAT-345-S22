@@ -1,0 +1,19 @@
+---
+title: "69 is nice"
+author: "Colin Kalsbeek"
+date: "3/10/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r }
+"nice" = 69
+"smoke weed everyday" = 420 
+```
+
