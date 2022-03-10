@@ -15,6 +15,5 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r }
 "nice" = 69
 "smoke weed everyday" = 420 
-"smoke weed everyday" == "nice"
 ```
 
