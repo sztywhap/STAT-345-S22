@@ -1,0 +1,893 @@
+---
+title: "345 midterm"
+author: "Colin Kalsbeek"
+date: "3/30/2022"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(devtools)
+# devtools::install_github("abresler/nbastatR")
+library(nbastatR)
+library(ggpubr)
+
+# had an error, changing connection size was suggested to fix this
+Sys.setenv("VROOM_CONNECTION_SIZE" = 131072*2)
+```
+
+
+```{r include=FALSE}
+# getting the shots for all the years
+# stopping at 2012 becuase entire player roster is different from current
+shots_2012 = teams_shots(teams = "Milwaukee Bucks", seasons = 2012)
+shots_2013 = teams_shots(teams = "Milwaukee Bucks", seasons = 2013)
+shots_2014 = teams_shots(teams = "Milwaukee Bucks", seasons = 2014)
+shots_2015 = teams_shots(teams = "Milwaukee Bucks", seasons = 2015)
+shots_2016 = teams_shots(teams = "Milwaukee Bucks", seasons = 2016)
+shots_2017 = teams_shots(teams = "Milwaukee Bucks", seasons = 2017)
+shots_2018 = teams_shots(teams = "Milwaukee Bucks", seasons = 2018)
+shots_2019 = teams_shots(teams = "Milwaukee Bucks", seasons = 2019)
+shots_2020 = teams_shots(teams = "Milwaukee Bucks", seasons = 2020)
+shots_2021 = teams_shots(teams = "Milwaukee Bucks", seasons = 2021)
+shots_2022 = teams_shots(teams = "Milwaukee Bucks", seasons = 2022)
+
+
+# changing "isShotMade" to "Make" for all data 
+# looks better on graph
+shots_2022 = shots_2022 %>% rename("Make" = "isShotMade")
+shots_2021 = shots_2021 %>% rename("Make" = "isShotMade")
+shots_2020 = shots_2020 %>% rename("Make" = "isShotMade")
+shots_2019 = shots_2019 %>% rename("Make" = "isShotMade")
+shots_2018 = shots_2018 %>% rename("Make" = "isShotMade")
+shots_2017 = shots_2017 %>% rename("Make" = "isShotMade")
+shots_2016 = shots_2016 %>% rename("Make" = "isShotMade")
+shots_2015 = shots_2015 %>% rename("Make" = "isShotMade")
+shots_2014 = shots_2014 %>% rename("Make" = "isShotMade")
+shots_2013 = shots_2013 %>% rename("Make" = "isShotMade")
+shots_2012 = shots_2012 %>% rename("Make" = "isShotMade")
+
+
+# converting coordinates from 1/10th foot to one foot.
+# found conversion through Pythagorean theorm
+# changing Make to be a factor (FALSE, TRUE)
+shots_2022 = shots_2022 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2021 = shots_2021 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2020 = shots_2020 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2019 = shots_2019 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2018 = shots_2018 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2017 = shots_2017 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2016 = shots_2016 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2015 = shots_2015 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2014 = shots_2014 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2013 = shots_2013 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+shots_2012 = shots_2012 %>% mutate(X = locationX/10, Y = locationY/10, Make = factor(Make))
+
+# eliminating over half court shots
+shots_2022 = shots_2022 %>% filter(Y <= 43)
+shots_2021 = shots_2021 %>% filter(Y <= 43)
+shots_2020 = shots_2020 %>% filter(Y <= 43)
+shots_2019 = shots_2019 %>% filter(Y <= 43)
+shots_2018 = shots_2018 %>% filter(Y <= 43)
+shots_2017 = shots_2017 %>% filter(Y <= 43)
+shots_2016 = shots_2016 %>% filter(Y <= 43)
+shots_2015 = shots_2015 %>% filter(Y <= 43)
+shots_2014 = shots_2014 %>% filter(Y <= 43)
+shots_2013 = shots_2013 %>% filter(Y <= 43)
+shots_2012 = shots_2012 %>% filter(Y <= 43)
+
+
+```
+
+
+```{r eval=FALSE, include=FALSE}
+# summary statistics
+#re-used for all years
+
+# fg %
+fg_total = shots_2012 %>% filter(typeShot == "2PT Field Goal")
+fg_made = shots_2012 %>% filter(typeShot == "2PT Field Goal", Make == TRUE)
+count(fg_made)/count(fg_total)
+
+# 3-pt % 
+three_total = shots_2012 %>% filter(typeShot == "3PT Field Goal") 
+three_made = shots_2012 %>% filter(typeShot == "3PT Field Goal", Make == TRUE)
+count(three_made)/count(three_total)
+
+# shooting % 
+total = shots_2012 %>% filter(Make == TRUE)
+count(total)/5637
+
+
+# finding mean amount of threes for two parts of decade
+three_total12 = shots_2012 %>% filter(typeShot == "3PT Field Goal") 
+three_total13 = shots_2013 %>% filter(typeShot == "3PT Field Goal") 
+three_total14 = shots_2014 %>% filter(typeShot == "3PT Field Goal") 
+three_total15 = shots_2015 %>% filter(typeShot == "3PT Field Goal") 
+three_total16 = shots_2016 %>% filter(typeShot == "3PT Field Goal") 
+threesB = count(three_total16) + count(three_total15) + count(three_total14) + count(three_total13) + count(three_total12)
+
+three_total18 = shots_2018 %>% filter(typeShot == "3PT Field Goal") 
+three_total19 = shots_2019 %>% filter(typeShot == "3PT Field Goal") 
+three_total20 = shots_2020 %>% filter(typeShot == "3PT Field Goal") 
+three_total21 = shots_2021 %>% filter(typeShot == "3PT Field Goal") 
+three_total22 = shots_2022 %>% filter(typeShot == "3PT Field Goal") 
+threesA = count(three_total18) + count(three_total19) + count(three_total20) + count(three_total21) + count(three_total22)
+
+
+threesB / (5637 + 7188 + 6730 + 6718 + 6713)
+threesB / 5
+threesA / (6796 + 7463 + 6630 + 6601 + 6673)
+threesA / 5
+
+```
+
+
+
+```{r include=FALSE}
+# Finding points 
+
+# difference is accounting for my negative court and the hoop being 4 feet 
+# higher then out of bounds. Shots would be oriented around the hoop.
+difference = 47-4
+
+points22 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make, color = Make), 
+             alpha = 0.33, shots_2022) 
+
+points21 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2021)
+
+points20 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2020)
+
+points19 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2019)
+
+points18 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2018)
+
+points17 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2017)
+
+points16 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2016)
+
+points15 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2015)
+
+points14 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2014)
+
+points13 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2013)
+
+points12 = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.33, shots_2012)
+
+
+ 
+```
+
+
+
+```{r include=FALSE}
+# Generating basketball courts with points
+# removed comments from all but 2022
+# I repeated the same procedure for each year only changing: 
+### court#, points# and title
+
+## 2022  
+ ### outside box:
+court22 = points22 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+  
+   ### halfcourt semicircle:
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+  
+   ### solid FT semicircle above FT line:
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+  
+   ### 'dashed' FT semicircle below FT line:
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+   
+  ### the key (larger rectangle):
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+  
+   ### the paint (smaller rectangle):
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+ 
+    ### restricted area semicircle:
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+   ### rim:
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+   ### backboard:
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+   ### three-point line:
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+
+      ### organizing points by color and shape
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+  
+   ###fix aspect ratio to 1:1 
+coord_fixed() + 
+  
+  ### Title 
+  labs(title = "Milwuakee Bucks 2021-2022 Shots Taken") + theme_bw()
+
+## 2021
+court21 = points21 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2020-2021 Shots Taken") + theme_bw()
+
+# 2020
+court20 = points20 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2019-2020 Shots Taken") + theme_bw()
+
+# 2019
+court19 = points19 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2018-2019 Shots Taken") + theme_bw()
+
+#2018
+court18 = points18 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2017-2018 Shots Taken") + theme_bw()
+
+
+# 2017
+court17 = points17 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2016-2017 Shots Taken") + theme_bw()
+
+# 2016
+court16 = points16 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2015-2016 Shots Taken") + theme_bw()
+
+# 2015
+court15 = points15 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2014-2015 Shots Taken") + theme_bw()
+
+# 2014
+court14 = points14 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2013-2014 Shots Taken") + theme_bw()
+
+#2013
+court13 = points13 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2012-2013 Shots Taken") + theme_bw()
+
+# 2012
+court12 = points12 + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Milwuakee Bucks 2011-2012 Shots Taken") + theme_bw()
+```
+
+
+
+```{r echo=FALSE}
+# 1st display chunk
+# 11 courts: 2011-2012 - 2021-2022
+
+court22 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())   + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court21 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court20 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court19 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court18 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court17 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court16 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court15+
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court14+
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court13+
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+court12 +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank()) + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
+```{r include=FALSE}
+# mvp years = 2018, 2019
+# finals mvp year = 2021
+# adding 2020 to see progress and for continuity 
+giannis18 = shots_2018 %>% filter(namePlayer == "Giannis Antetokounmpo")
+giannis19 = shots_2019 %>% filter(namePlayer == "Giannis Antetokounmpo")
+giannis20 = shots_2020 %>% filter(namePlayer == "Giannis Antetokounmpo")
+giannis21 = shots_2021 %>% filter(namePlayer == "Giannis Antetokounmpo")
+
+g18_points = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.55, giannis18)
+
+g19_points = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.55, giannis19)
+
+g20_points = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make, 
+                         color = Make), alpha = 0.55, giannis20)
+
+g21_points = ggplot(data=data.frame(x=1,y=1), aes(x,y)) + 
+  geom_point(aes(x = X, y = Y-difference, shape = Make,
+                          color = Make), alpha = 0.55, giannis21)
+
+# 2018 MVP
+giannis18_court = g18_points + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Giannis's Shots From MVP Season 2017-2018") + theme_bw()
+
+# 2019 MVP
+giannis19_court = g19_points + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Giannis's Shots From MVP Season 2018-2019") + theme_bw()
+
+# 2020 in between year 
+giannis20_court = g20_points + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) +
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Giannis's Shots From Season 2019-2020") + theme_bw()
+
+
+# 2021 Finals MVP
+giannis21_court = g21_points + geom_path(data=data.frame(x = c(-25,-25,25,25,-25),
+                          y = c(-47,0,0,-47,-47))) +
+geom_path(data=data.frame(x = c(-6000:(-1)/1000, 1:6000/1000),
+                          y = -c(sqrt(6^2-c(-6000:(-1)/1000, 1:6000/1000)^2))),
+          aes(x=x,y=y)) + 
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),
+                        y=-c(28+sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),
+          aes(x=x,y=y),linetype="dashed")+
+geom_path(data=data.frame(x=-c(-8,-8,8,8,-8),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),
+                          y=-c(47,28,28,47,47))) +
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),
+                        y=-c(41.25-sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),
+          aes(x=x,y=y)) +
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),
+                        y=-c(c(41.75+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),
+                             c(41.75-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),
+          aes(x=x,y=y))+
+geom_path(data=data.frame(x=c(-3,3),
+                          y=-c(43,43)),lineend='butt') +
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),
+                        y=-c(47,47-169/12,41.75-sqrt(23.75^2-c(-22000:(-1)/1000,
+                                1:22000/1000)^2),47-169/12,47)),aes(x=x,y=y)) + 
+   scale_color_manual(values = c("red", "dark green")) + 
+   scale_shape_manual(values = c( 4, 20)) +
+coord_fixed() + 
+  labs(title = "Giannis's Shots From Finals MVP Season 2020-2021") + theme_bw()
+
+```
+
+
+```{r echo=FALSE}
+# display chunk Giannis 
+
+giannis18_court +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+giannis19_court +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+giannis20_court +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+
+giannis21_court +
+  labs(x = "", y = "") + 
+  scale_x_continuous(breaks = c(25, 0, -25)) + 
+  scale_y_continuous(breaks = c(0, -23.5, -47))  +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())  + 
+   theme(plot.title = element_text(hjust = 0.5))
+```
+
